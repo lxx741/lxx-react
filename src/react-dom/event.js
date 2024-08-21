@@ -1,3 +1,4 @@
+import { setIsBatchingUpdates, flushDirtyComponents } from '../react'
 // 定义事件类型方法
 const eventTypeMethods = {
   // 点击事件
@@ -68,6 +69,7 @@ export default function setupEventDelegation(container) {
           const methodName = eventTypeMethods[type][phase]
           // 捕获阶段反转传播路径
           const elements = phase === 'capture' ? path.reverse() : path
+          setIsBatchingUpdates(true) // 设置为批量更新
           for (let element of elements) {
             // 已阻止冒泡，则不再进行后续事件处理函数的执行
             if (syntheticEvent.isPropagationStopped()) {
@@ -75,6 +77,8 @@ export default function setupEventDelegation(container) {
             }
             element.reactEvents?.[methodName]?.(syntheticEvent)
           }
+          // 处理完所有绑定的事件后，再刷新组件
+          flushDirtyComponents()
         },
         phase === 'capture'
       )
