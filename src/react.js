@@ -20,7 +20,16 @@ function createElement(type, config, children) {
     props,
   }
 }
+// 创建基类组件
+class Component {
+  // 凡是继承自该类的组件都是react的类组件，即该类有个isReactComponent属性
+  static isReactComponent = true
+  constructor(props) {
+    this.props = props
+  }
+}
 const React = {
   createElement,
+  Component,
 }
 export default React
