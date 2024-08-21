@@ -2,7 +2,7 @@ import setupEventDelegation from './event'
 import { isUndefined, wrapToArray } from '../utils'
 import { REACT_TEXT, FORWARD_REF } from '../constant'
 
-// 
+//
 export function createReactForwardDOMElement(vdom) {
   const { type, props, ref } = vdom
   const renderVdom = type.render(props, ref)
@@ -26,6 +26,8 @@ export function mountVdom(vdom, container) {
   const domElement = createDOMElement(vdom)
   if (domElement === null) return
   container.appendChild(domElement)
+  // 挂载后的钩子函数
+  domElement?.componentDidMount?.()
 }
 // 根据虚拟节点创建真实节点
 export function createDOMElement(vdom) {
@@ -44,6 +46,17 @@ export function createDOMElement(vdom) {
   } else {
     return createNativeDOMElement(vdom)
   }
+}
+function createNativeDOMElement(vdom) {
+  const { type, props, ref } = vdom
+  const domElement = document.createElement(type)
+  if (ref) {
+    ref.current = domElement
+  }
+  updateProps(domElement, {}, props)
+  mountChildren(vdom, domElement)
+  vdom.domElement = domElement
+  return domElement
 }
 // 根据虚拟节点创建真实文本节点
 function createTextDOMElement(vdom) {
@@ -64,27 +77,21 @@ function createFunctionDOMElement(vdom) {
 function createClassDOMElement(vdom) {
   const { type, props, ref } = vdom
   const classInstance = new type(props)
+  classInstance?.componentWillMount()
   vdom.classInstance = classInstance
   // ref 存在，则将类的实例存放到 ref.current 上
   if (ref) ref.current = classInstance
   const renderVdom = classInstance.render()
   classInstance.oldRenderVdom = renderVdom
-  return createDOMElement(renderVdom)
-}
-// 根据虚拟节点创建原生节点
-function createNativeDOMElement(vdom) {
-  const { type, props, ref } = vdom
-  const domElement = document.createElement(type)
-  if (ref) {
-    // 如果存在ref，则将真实节点存放在 ref.current 上
-    ref.current = domElement
+  const domElement = createDOMElement(renderVdom)
+  if (typeof classInstance.componentDidMount === 'function') {
+    // 实例上存在 componentDidMount 钩子函数，则把该钩子函数赋值给 domElement.componentDidMount
+    domElement.componentDidMount =
+      classInstance.componentDidMount.bind(classInstance)
   }
-  updateProps(domElement, {}, props)
-  mountChildren(vdom, domElement)
-  // 虚拟节点与真实节点映射起来
-  vdom.domElement = domElement
   return domElement
 }
+// 根据虚拟节点创建原生节点
 // 挂载后代节点
 function mountChildren(vdom, container) {
   wrapToArray(vdom?.props?.children).forEach((child) =>
