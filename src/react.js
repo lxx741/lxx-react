@@ -1,4 +1,5 @@
 import { wrapToVdom } from './utils'
+import { FORWARD_REF } from './constant'
 import { getDOMElementByVdom, createDOMElement } from './react-dom/client'
 // 默认不是批量更新
 let isBatchingUpdates = false
@@ -15,15 +16,14 @@ export function flushDirtyComponents() {
   isBatchingUpdates = false
 }
 function createElement(type, config, children) {
-  const props = {
-    ...config,
-  }
+  let { ref, ...props } = config
   if (arguments.length > 3) {
     props.children = Array.prototype.slice.call(arguments, 2).map(wrapToVdom)
   } else {
     props.children = wrapToVdom(children)
   }
   return {
+    ref,
     type,
     props,
   }
@@ -37,18 +37,6 @@ class Component {
   // 重新设置状态
   // 参数可以是一个对象或函数
   setState(partialState) {
-    // const newState =
-    //   typeof partialState === 'function'
-    //     ? partialState(this.state) // 是函数的话，则调用函数并将之前的状态作为参数传入
-    //     : partialState // 是对象的话，则作为新状态
-    // // 解构老状态和新状态，用新状态覆盖老状态
-    // this.state = {
-    //   ...this.state,
-    //   ...newState,
-    // }
-    // // 更新UI
-    // this.forceUpdate()
-
     // 如果是批量更新状态，则先把组件和状态存起来
     // react管理下的事件触发状态的更新，先把组件和状态存起来，等所有事件调用完毕后，再进行状态的更新和重新渲染
     if (isBatchingUpdates) {
@@ -92,8 +80,25 @@ class Component {
     this.oldRenderVdom = renderVdom
   }
 }
+
+// 创建ref引用
+function createRef() {
+  return {
+    current: null,
+  }
+}
+
+// 根据render函数，创建虚拟节点
+function forwardRef(render) {
+  return {
+    $$typeof: FORWARD_REF, // 类型标识
+    render, // 渲染函数
+  }
+}
 const React = {
   createElement,
   Component,
+  createRef,
+  forwardRef,
 }
 export default React

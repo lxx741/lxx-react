@@ -1,9 +1,15 @@
-// 处理事件委托
 import setupEventDelegation from './event'
-// 导入工具函数
 import { isUndefined, wrapToArray } from '../utils'
-// 导入文本标识
-import { REACT_TEXT } from '../constant'
+import { REACT_TEXT, FORWARD_REF } from '../constant'
+
+// 
+export function createReactForwardDOMElement(vdom) {
+  const { type, props, ref } = vdom
+  const renderVdom = type.render(props, ref)
+  vdom.oldRenderVdom = renderVdom
+  return createDOMElement(renderVdom)
+}
+
 // 创建根容器
 function createRoot(container) {
   return {
@@ -25,7 +31,9 @@ export function mountVdom(vdom, container) {
 export function createDOMElement(vdom) {
   if (isUndefined(vdom)) return null
   const { type } = vdom
-  if (type === REACT_TEXT) {
+  if (type.$$typeof === FORWARD_REF) {
+    return createReactForwardDOMElement(vdom)
+  } else if (type === REACT_TEXT) {
     return createTextDOMElement(vdom)
   } else if (typeof type === 'function') {
     if (type.isReactComponent) {
@@ -54,17 +62,23 @@ function createFunctionDOMElement(vdom) {
 }
 // 根据虚拟节点创建类组件对应的真实节点
 function createClassDOMElement(vdom) {
-  const { type, props } = vdom
+  const { type, props, ref } = vdom
   const classInstance = new type(props)
   vdom.classInstance = classInstance
+  // ref 存在，则将类的实例存放到 ref.current 上
+  if (ref) ref.current = classInstance
   const renderVdom = classInstance.render()
   classInstance.oldRenderVdom = renderVdom
   return createDOMElement(renderVdom)
 }
 // 根据虚拟节点创建原生节点
 function createNativeDOMElement(vdom) {
-  const { type, props } = vdom
+  const { type, props, ref } = vdom
   const domElement = document.createElement(type)
+  if (ref) {
+    // 如果存在ref，则将真实节点存放在 ref.current 上
+    ref.current = domElement
+  }
   updateProps(domElement, {}, props)
   mountChildren(vdom, domElement)
   // 虚拟节点与真实节点映射起来

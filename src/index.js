@@ -1,29 +1,26 @@
 import React from './react'
 import ReactDOM from './react-dom/client'
-// import ReactDOM from "react-dom";
-class Counter extends React.Component {
+
+// 通过 forwardRef 创建出的组件，可以将 ref 传递给内部元素
+const ForwardedButton = React.forwardRef((props, ref) => (
+  <input ref={ref} {...props} />
+))
+
+class App extends React.Component {
   constructor(props) {
     super(props)
-    this.state = {
-      number: 0,
-    }
-  }
-  handleClick = () => {
-    this.setState({ number: this.state.number + 1 })
-    console.log(this.state)
-    this.setState({ number: this.state.number + 1 })
-    console.log(this.state)
-    setTimeout(() => {
-      this.setState({ number: this.state.number + 1 })
-      console.log(this.state)
-      this.setState({ number: this.state.number + 1 })
-      console.log(this.state)
-    })
+    // 创建 ref 对象
+    this.inputRef = React.createRef()
   }
   render() {
-    return <button onClick={this.handleClick}>{this.state.number}</button>
+    return (
+      <div>
+        {/* 将 ref 传给通过 forwardRef 创建出的组件 */}
+        <ForwardedButton ref={this.inputRef} />
+        <button onClick={() => this.inputRef.current.focus()}>focus</button>
+      </div>
+    )
   }
 }
-const classElement = <Counter />
+const classElement = <App />
 ReactDOM.createRoot(document.getElementById('root')).render(classElement)
-//ReactDOM.render(classElement, document.getElementById("root"));
