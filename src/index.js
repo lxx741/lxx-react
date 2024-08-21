@@ -1,7 +1,28 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-	<App />
-);
+import React from './react' // 导入react核心包
+import ReactDOM from './react-dom/client' // 导入react web平台渲染包
+import utils from 'zhang-utils' // 导入工具包
+// 创建虚拟节点（react element）
+const element = React.createElement(
+  'div',
+  {
+    style: {
+      color: 'red',
+    },
+    className: 'wrapper',
+  },
+  'hello',
+  React.createElement(
+    'span',
+    {
+      style: {
+        color: 'blue',
+      },
+    },
+    'world'
+  )
+)
+console.log(
+  JSON.stringify(utils.removePrivateProps(element, ['key', 'ref']), null, 2)
+)
+// 创建跟容器并把虚拟节点渲染到容器中
+ReactDOM.createRoot(document.getElementById('root')).render(element)
